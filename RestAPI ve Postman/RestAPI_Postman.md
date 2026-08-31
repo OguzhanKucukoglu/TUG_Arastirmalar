@@ -102,7 +102,7 @@ Postman'da bir işlem yaparken izlenecek standart döngü her zaman şudur: Sol 
 
 Testler için geliştiricilerin kum havuzu olan ücretsiz **JSONPlaceholder** servisini kullanarak ilk GET ve POST isteklerini oluşturma:
 
-##### **Senaryo 1: GET İsteği ile Veri Çekmek**
+#### **Senaryo 1: GET İsteği ile Veri Çekmek**
 
 Amaç: Sistemdeki 1 numaralı makaleyi (post) okumak.
 
@@ -117,7 +117,7 @@ Amaç: Sistemdeki 1 numaralı makaleyi (post) okumak.
   <img src="Senaryo 1.png" alt="Senaryo 1">
 </p>
 
-##### **Senaryo 2: POST İsteği ile Yeni Veri Göndermek**
+#### **Senaryo 2: POST İsteği ile Yeni Veri Göndermek**
 
 Amaç: Sunucuya kendi yazdığımız yeni bir makaleyi kaydetmek.
 
@@ -147,7 +147,7 @@ Amaç: Sunucuya kendi yazdığımız yeni bir makaleyi kaydetmek.
 
 > Not: Metin tabanlı veriler için `raw` formatı kullanılır ancak sunucuya bir profil fotoğrafı, PDF veya herhangi bir dosya yüklenmek istendiğinde, Body sekmesinde `raw` yerine `form-data` seçeneğini işaretlemek gerekir.
 
-##### **Senaryo 3: Query Params (Sorgu Parametreleri) ile Filtreleme**
+#### **Senaryo 3: Query Params (Sorgu Parametreleri) ile Filtreleme**
 
 Amaç: Bazen tüm veriler değil, belirli bir filtreye uyanlar istenebilir.
 
