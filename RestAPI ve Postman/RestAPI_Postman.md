@@ -34,8 +34,13 @@ Bir istek (Request) atıldığında, sunucu bir cevap (Response) döner. Bu ceva
 |201 Created|İstek başarılı ve sunucuda yeni bir kayıt oluştu.|Başarılı (2xx)|
 |400 Bad Request|Gönderilen istekte veya veride hata var.|İstemci Hatası (4xx)|
 |401 Unauthorized|Kimlik doğrulaması eksik.|İstemci Hatası (4xx)|
+|403 Forbidden|Sunucu isteği anladı ancak yerine getirmeyi reddediyor.|İstemci Hatası (4xx)|
 |404 Not Found|Ulaşmaya çalışılan adres veya veri bulunamadı.|İstemci Hatası (4xx)|
+|405 Method Not Allowed|İstenen işlem için kullanılan HTTP metodu desteklenmiyor.|İstemci Hatası (4xx)|
+|429 Too Many Requests|İstemci belirli bir zaman diliminde çok fazla istek göndererek sunucunun hız sınırına (rate limit) takıldı.|İstemci Hatası (4xx)|
 |500 Internal Server Error|Karşı sunucu çöktü.|Sunucu Hatası (5xx)|
+|502 Bad Gateway|Ağ geçidi veya proxy olarak çalışan bir sunucu geçersiz bir cevap aldı.|Sunucu Hatası (5xx)|
+|503 Service Unavailable|Sunucu aşırı yüklenme veya planlı bakım çalışmaları nedeniyle isteklere geçici olarak cevap veremiyor.|Sunucu Hatası (5xx)|
 
 > Bu metotlar ve dönen cevap kodları, Postman'da işlem yaparken kullanılacak.
 
