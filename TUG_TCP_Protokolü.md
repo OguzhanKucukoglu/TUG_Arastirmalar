@@ -223,13 +223,17 @@ Web sayfalarının sunucudan istemciye (tarayıcıya) aktarılmasını sağlayan
 
 #### 4.4 Diğer Temel Uygulama Katmanı Protokolleri
 
-| Protokol | Açılımı | Varsayılan Port | Temel İşlevi |
-|---|---|---|---|
-| DHCP | Dynamic Host Configuration Protocol | UDP 67/68 | Ağa bağlanan cihazlara otomatik olarak IP adresi, alt ağ maskesi, varsayılan ağ geçidi (default gateway) ve DNS sunucu adresi atar. "IP çakışması" sorunlarını engeller. |
-| FTP | File Transfer Protocol | TCP 20/21 | İki bilgisayar veya bir sunucu ile istemci arasında dosya yükleme ve indirme işlemlerini yönetir. |
-| SMTP | Simple Mail Transfer Protocol | TCP 25/587 | E-posta gönderimini sağlar. İstemciden e-posta sunucusuna veya sunucular arası mail transferinden sorumludur. (Not: Posta almak için POP3 veya IMAP kullanılır). |
-| SSH | Secure Shell | TCP 22 | Ağ üzerindeki başka bir bilgisayara veya sunucuya komut satırı üzerinden güvenli (şifreli) ve uzaktan erişim sağlar. |
+- HTTP / HTTPS (80/443): Web sayfalarının görüntülenmesini sağlar (HTTPS veriyi şifreler).
 
+- DNS (53): "google.com" gibi alan adlarını makine dilindeki IP adreslerine çevirir.
+
+- SMTP, POP3, IMAP (25, 587 / 110 / 143): E-posta gönderimi ve alımı için kullanılır.
+
+- FTP (20 (Veri), 21 (Kontrol)): Sunucu ve istemci arasında dosya aktarımı yapar.
+
+- DHCP (67 (Sunucu), 68 (İstemci)): Ağa bağlanan cihazlara otomatik olarak IP adresi, alt ağ maskesi ve ağ geçidi atar.
+
+- SSH / Telnet (22 / 23): Uzaktaki bir bilgisayara veya sunucuya komut satırı üzerinden güvenli (SSH) veya güvensiz (Telnet) bağlantı sağlar.
 
 ## IP Adresleme ve Subnetting (Alt Ağlara Bölme)
 
