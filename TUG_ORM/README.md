@@ -122,6 +122,7 @@ session.commit()
 #### Temel Farklar
 
 |Özellik|Active Record|Data Mapper|
+|---|---|---|
 |Bağımlılık|Model veritabanına sıkı sıkıya bağlıdır.|Model veritabanından tamamen bağımsızdır.|
 |Öğrenme Eğrisi|Çok daha düşük, başlaması kolaydır.|Daha dik, ekstra kavramlar gerektirir.|
 |Mimari|Tek Sorumluluk (SRP) ilkesini biraz esnetir.|Katı bir şekilde ayrım yapar, kod daha temiz kalır.|
