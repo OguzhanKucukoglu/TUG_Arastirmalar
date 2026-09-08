@@ -102,7 +102,7 @@ user.save() # Nesne doğrudan veritabanıyla konuşur ve kendini kaydeder.
 
 Data Mapper yaklaşımında nesne, sadece ve sadece veriyi tutar. Veritabanının varlığından bile haberi yoktur. Nesneyi veritabanına kaydetmek, güncellemek veya silmek tamamen ayrı bir "Yönetici" (Session, EntityManager veya Context) sınıfının sorumluluğundadır.
 
-- Mantık: İş kuralları (nesne) ile veritabanı işlemleri (mapper) birbirinden tamamen yalıtılmıştır. Nesne sadece işini yapar, muhasebeci (Mapper) gidip vergileri yatırır.
+- Mantık: İş kuralları (nesne) ile veritabanı işlemleri (mapper) birbirinden tamamen yalıtılmıştır. Nesne sadece işini yapar, onu veritabanına kaydetmek "Yönetici"nin işidir. 
 
 - Kullanım Alanı: Karmaşık iş kurallarının olduğu, büyük ölçekli ve uzun ömürlü kurumsal projelerde tercih edilir.
 
