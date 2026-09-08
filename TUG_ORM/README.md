@@ -48,6 +48,15 @@ ORM, koddaki nesneler ile veritabanındaki tablolar arasında çalışan otomati
 |Özellik|Sütun (Column)|Sınıfın içindeki name veya age değişkenleri, tablodaki sütun başlıkları olur.|
 |Nesne|Kayıt (Row)|Sınıftan üretilen her bir canlı örnek tabloda bir satıra yazılır.|
 
+**Mapping İşlemi Nasıl Gerçekleşir?**
+1. Yapılandırma (Configuration): ORM aracına hangi sınıfın hangi tabloya denk geldiği belirtilir. Bu eşleştirme genellikle kod içindeki etiketlerle (Data Annotations) veya yapılandırma fonksiyonlarıyla yapılır.
+
+2. Sorgu Çevirisi (Translation): Koda nesne tabanlı bir sorgu yazıldığında ORM bu ifadeyi analiz eder ve veritabanının anlayacağı şekilde SQL metnine dönüştürür.
+
+3. Çalıştırma: Üretilen SQL sorgusu, uygun veritabanı sürücüsü üzerinden veritabanına iletilir.
+
+4. Nesneye Dönüştürme (Hydration / Materialization): Veritabanından dönen tablo formatındaki ham veriler, ORM tarafından alınır ve önceden tanımlanan sınıfların yeni örneklerine (nesnelere) doldurulur. İşlem sonunda elde SQL satırları değil, doğrudan kodda kullanılabilecek objeler listesi olur.
+
 <p align="center">
   <img src="ORM_Mapping.png" alt="ORM Mapping">
 </p>
