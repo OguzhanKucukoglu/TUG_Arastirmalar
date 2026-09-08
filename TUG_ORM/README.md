@@ -6,11 +6,11 @@ Yazılım dünyasında veriyi işleyen taraf ile veriyi saklayan taraf birbirind
 #### ORM'den Önce
 ORM kullanılmayan durumlarda koda uzun uzun SQL metinleri yazılır.
 
-- Kodun içi son derece karmaşıklaşırdı. Programlama dilinin içinde SQL sorguları metin olarak yazılırdı.
+- Kodun içi son derece karmaşıklaşır. Programlama dilinin içinde SQL sorguları metin olarak yazılır.
 
-- Güvenlik açıkları (SQL Injection) çok yaygındı çünkü kullanıcıdan gelen veri doğrudan bu SQL metinlerine yapıştırılırdı.
+- Güvenlik açıkları (SQL Injection) çok yaygındır çünkü kullanıcıdan gelen veri doğrudan bu SQL metinlerine yapıştırılır.
 
-- Veritabanı türü değiştiğinde (örneğin MySQL'den PostgreSQL'e geçildiğinde) tüm SQL metinlerini tek tek bulup yeni veritabanının diline göre değiştirmek gerekirdi.
+- Veritabanı türü değiştiğinde (örneğin MySQL'den PostgreSQL'e geçildiğinde) tüm SQL metinlerini tek tek bulup yeni veritabanının diline göre değiştirmek gerekir.
 
 #### Geleneksel İlişkisel Veritabanı Mantığı
 Veritabanları veriyi Tablolar halinde tutar, Tablolar arası bağlantılar matematikseldir ve Foreign Key ile sağlanır. Veritabanının tek derdi veriyi güvenli, kurallı ve düzenli bir şekilde saklamaktır.
