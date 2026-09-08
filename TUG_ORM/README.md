@@ -277,12 +277,8 @@ Diyelim ki sistemimizde 100 tane `User` (kullanıcı) var ve her kullanıcının
 
 Hatalı Kod (N+1 Problemi):
 ```Python
-# Veritabanına GİDİLDİ: Tüm kullanıcıları getir (Bu "+1" olan ilk ana sorgudur)
 users = session.query(User).all() 
-
 for user in users:
-    # DİKKAT: user.posts dediğimiz an Lazy Loading devreye girer.
-    # Döngü her döndüğünde veritabanına YENİ BİR SORGU atılır. (Bu da "N" sorgudur)
     for post in user.posts: 
         print(f"{user.name} - {post.title}")
 ```
@@ -294,13 +290,8 @@ for user in users:
 ORM'e, ilişkili verileri baştan getirmesi söylenmeli.
 
 ```Python
-from sqlalchemy.orm import joinedload
-
-# Veritabanına GİDİLDİ: Kullanıcıları ve gönderilerini tek bir JOIN sorgusuyla getir! (Sadece 1 sorgu)
 session.execute(select(User).options(joinedload(User.posts))).unique().scalars().all()
-
 for user in users:
-    # Veritabanına GİDİLMEZ! Gönderiler zaten hafızaya alındı.
     for post in user.posts:
         print(f"{user.name} - {post.title}")
 ```
