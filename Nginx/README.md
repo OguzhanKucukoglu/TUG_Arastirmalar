@@ -22,8 +22,8 @@ Yüksek performanslı bir web sunucusu, reverse proxy ve yük dengeleyicidir (lo
 
 |Alternatif|Öne Çıkan Özelliği|Neden Tercih Edilir?|Nginx ile Temel Farkı|
 |---|---|---|---|
-|Apache|.htaccess desteği ve modüler yapı|Geleneksel paylaşımlı hostingler (cPanel vb.) için hala vazgeçilmezdir. Ayarların klasör bazında kolayca ezilmesine olanak tanır.|Nginx statik dosyalarda ve anlık yüksek trafikte çok daha hızlıdır. Apache ise her istek için yeni bir süreç/iş parçacığı başlattığından yoğun yük altında Nginx kadar verimli değildir.|
-|Caddy|Otomatik SSL ve minimal konfigürasyon|Yeni neslin favorisidir. Nginx'te manuel yapılan HTTPS/Sertifika ayarlarını otomatik halleder. Konfigürasyon dosyası Nginx'in onda biri kadardır.|Nginx'in yapılandırması detaylı ve uzundur, SSL için Let's Encrypt (Certbot) gibi dış araçlar kurmayı gerektirir. Caddy ise SSL'i kendisi alır ve yeniler. Ancak Nginx'in modül ekosistemi ve topluluğu çok daha büyüktür.|
+|Apache|.htaccess desteği ve modüler yapı|Geleneksel paylaşımlı hostingler (cPanel vb.) için hala vazgeçilmezdir. Ayarların klasör bazında kolayca ezilmesine olanak tanır.|Nginx özellikle yüksek eşzamanlı bağlantı sayısı ve statik içerik sunumu gibi senaryolarda güçlü performans avantajları sağlayabilir. Apache ise kullandığı MPM modeline bağlı olarak process veya thread tabanlı çalışabilir; özellikle yüksek eşzamanlı bağlantılarda Nginx'in event-driven mimarisi kaynak kullanımı açısından avantaj sağlayabilir.|
+|Caddy|Otomatik SSL ve minimal konfigürasyon|Yeni neslin favorisidir. Nginx'te manuel yapılan HTTPS/Sertifika ayarlarını otomatik halleder. Konfigürasyon dosyası Nginx'in onda biri kadardır.|Nginx'in HTTPS yapılandırması daha manuel ve ayrıntılıdır. Let's Encrypt sertifikalarının otomatik alınması ve yenilenmesi için Certbot veya başka bir ACME istemcisi gibi ek araçlar kullanılabilir. Caddy ise bu süreci yerleşik olarak otomatikleştirir.|
 |Traefik|Konteyner (Docker/Kubernetes) dostu|Mikroservisler için biçilmiş kaftandır. Sisteme yeni bir Docker ayağa kalktığında Traefik bunu otomatik tanır, Nginx gibi ayar dosyasını manuel güncellemeye gerek kalmaz.|Nginx statik ayar dosyalarıyla çalışır, arkaya yeni bir uygulama eklendiğinde dosyayı düzenleyip Nginx'e "reload" atmak gerekir. Traefik ise arkadaki değişiklikleri anlık olarak algılayıp trafiği kesintisiz yönlendirir.|
 |HAProxy|Saf Yük Dengeleme (Load Balancing)|Nginx gibi statik dosya (HTML/CSS) sunmaz, sadece trafiği dağıtmaya odaklanır.|Nginx web sunucusu işini de yapar, HAProxy yapmaz. Saf yük dengeleme algoritmalarında ve sunucu sağlık kontrollerinde (health checks) ücretsiz Nginx'ten çok daha yetenekli ve incedir.|
 |Envoy|Bulut tabanlı (Cloud-native) mimari|Özellikle Kubernetes ortamlarında (Service Mesh) Nginx'in yerini almaya başlayan, mikroservisler arası iletişimi yöneten modern C++ tabanlı vekildir.|Nginx genellikle dışarıdan gelen isteği karşılayan ana kapı (Edge Proxy) olarak kullanılırken, Envoy daha çok sistemin içindeki onlarca uygulamanın kendi aralarındaki devasa veri trafiğini yönetmek için tercih edilir.|
@@ -31,9 +31,9 @@ Yüksek performanslı bir web sunucusu, reverse proxy ve yük dengeleyicidir (lo
 ### Event-Driven Mimari
 Nginx'i standart haline getiren temel özellik, gelen bağlantıları ele alış biçimidir:
 
-**Geleneksel Model (Thread-Based):** Eski nesil web sunucuları her yeni kullanıcı bağlantısı için yeni bir thread oluşturur. Trafik arttıkça RAM ve CPU tüketimi hızla şişer, sunucu tıkanır.
+**Geleneksel Model (Thread-Based):** Bazı geleneksel web sunucusu mimarilerinde eşzamanlı bağlantıları yönetmek için process veya thread'ler kullanılır. Bağlantı sayısı arttıkça bu yapıların oluşturduğu bellek ve CPU maliyeti de artabilir.
 
-**Nginx Modeli (Asenkron ve Non-blocking):** Nginx her bağlantı için yeni işlem başlatmaz. Bunun yerine, az sayıda işlemle binlerce bağlantıyı bir "olay döngüsü" (event loop) üzerinden yönetir. Bekleme gerektiren bir işlem olduğunda sistemi kitlemez, o sırada başka bir kullanıcının isteğini yanıtlar.
+**Nginx Modeli (Asenkron ve Non-blocking):** Nginx her bağlantı için yeni bir process veya thread oluşturmak yerine, worker process'ler içerisindeki event loop mekanizmasıyla çok sayıda bağlantıyı yönetir. Bir bağlantı I/O beklerken worker başka bağlantıların olaylarını işleyebilir.
 
 **Sonuç:** Çok düşük RAM tüketimi ile devasa trafikleri eritebilme gücü.
 
@@ -124,7 +124,7 @@ Nginx, location bloğu içerisine yazılan `proxy_pass` komutu ile bu yönlendir
 Örneğin Nginx'e dışarıdan `/api` ile başlayan bir istek gelirse, buna cevap vermez, bu isteği alır ve sunucunun kendi içindeki http://localhost:3000 adresine fırlatır.
 
 ### Başlıkları (Headers) Taşımak
-Nginx arka plandaki uygulama ile konuşurken bir problem ortaya çıkar. Arka plan uygulamasına soruyu bizzat Nginx sorduğu için uygulama gelen bütün isteklerin kaynağını Nginx'in IP adresi (genellikle 127.0.0.1 - localhost) olarak görür. Gerçek kullanıcının IP adresini bilemez (bu da loglama veya IP banlama gibi güvenlik önlemlerini engeller).
+Nginx reverse proxy olarak çalışırken backend bağlantıyı Nginx'ten gelen bir bağlantı olarak görür. Nginx ve backend aynı makinedeyse bu adres genellikle 127.0.0.1 gibi bir localhost adresidir, farklı makinelerde ise Nginx sunucusunun IP adresi görülür. Bu nedenle gerçek istemci IP'si ve diğer istemci bilgileri `X-Real-IP, X-Forwarded-For, X-Forwarded-Proto` gibi HTTP header'ları üzerinden backend'e aktarılabilir.
 
 Bunu çözmek için Nginx'te `proxy_set_header` komutları kullanılır. Nginx, isteği arka plana fırlatırken gerçek kullanıcının IP adresini ve tarayıcı bilgilerini bir HTTP Headers'a koyarak arka plandaki uygulamaya iletir. Böylece uygulama (hangi dilde yazılmış olursa olsun) aslında kiminle muhatap olduğunu bilir.
 
@@ -163,7 +163,7 @@ Nginx'in trafiği dağıtırken kullandığı temel stratejiler şunlardır:
 
 Amacı kullanıcının tarayıcısı ile sunucu arasındaki trafiği şifrelemektir. Nginx bu aşamada şifreleme ve şifre çözme işlemini üstlenerek arka plandaki uygulamaları büyük bir yükten kurtarır.
 
-İnternetten gelen şifreli istek Nginx'e ulaşır. Nginx şifreyi çözer ve uygulamaya şifresiz, düz bir HTTP isteği olarak yollar. Uygulama cevabı düz HTTP olarak Nginx'e verir, Nginx bunu tekrar şifreleyip internete yollar. Böylece arka plan uygulaması kriptografi matematiğiyle uğraşmaz.
+İnternetten gelen şifreli istek Nginx'e ulaşır. Nginx TLS bağlantısını sonlandırır ve isteği backend'e iletir. Backend bağlantısı ayrıca HTTP veya HTTPS olarak yapılandırılabilir. Böylece TLS şifreleme işlemi Nginx üzerinde sonlandırılabilir; backend ile Nginx arasındaki bağlantının ayrıca şifrelenip şifrelenmeyeceği mimariye göre belirlenir.
 
 <p align="center">
   <img src="ssl_tls.jpg" alt="SSL/TLS">
@@ -200,7 +200,7 @@ Amaç sistemde ne olup bittiğini görmek, hataları ayıklamak ve siteye gelen 
 
 Belirli bir client'ın veya anahtarın belirli bir süre içinde gönderebileceği request oranını sınırlandırarak API'lerin, login endpoint'lerinin ve diğer kritik kaynakların aşırı kullanımını önlemeye yardımcı olur. Bot trafiği, brute-force denemeleri ve uygulama katmanındaki bazı DoS türlerine karşı faydalı olabilir; ancak tek başına genel amaçlı bir DDoS koruması değildir.
 
-`limit_req` rate limit aşıldığında yapılandırmaya bağlı olarak request'i geciktirebilir veya reddedebilir. Reddedilen request'ler için varsayılan HTTP status code 429 Too Many Requests'tir; farklı bir status code yapılandırılabilir.
+`limit_req`, rate limit aşıldığında isteği yapılandırmaya bağlı olarak geciktirebilir veya reddedebilir. Reddedilen istekler için Nginx'in varsayılan HTTP status kodu 503 Service Unavailable'dır. `limit_req_status` direktifi kullanılarak farklı bir status kodu, örneğin 429 Too Many Requests, yapılandırılabilir.
 
 **Çalışma Mantığı (Leaky Bucket Algoritması):** Eğer bir IP adresi belirlenen limiti (örneğin saniyede 10 istek) aşarsa, Nginx fazla gelen istekleri arka plandaki asıl uygulamaya hiç iletmeden doğrudan reddeder. Kullanıcıya "503 Service Unavailable" (veya yapılandırmaya göre 429 Too Many Requests) hata kodu döndürülür.
 
