@@ -14,11 +14,11 @@ Yüksek performanslı bir web sunucusu, reverse proxy ve yük dengeleyicidir (lo
 
 ### Nginx'ten Önce Ne Vardı?
 
-**Apache HTTP Server:** 90'ların sonu ve 2000'lerin başında internetin mutlak hakimiydi. Ancak Apache, her yeni ziyaretçi için sunucuda yeni bir işlem açma mantığıyla çalışıyordu.
+**Apache HTTP Server:** 90'ların sonu ve 2000'lerin başında web sunucusu dünyasının en yaygın çözümlerinden biriydi. Apache'nin özellikle geleneksel prefork MPM (Multi-Processing Module) modeli, yüksek sayıda eşzamanlı bağlantıda her bağlantı için ayrı process kullanabilmesi nedeniyle ciddi kaynak tüketimine yol açabiliyordu. Daha sonra worker ve event gibi thread tabanlı MPM'ler geliştirilerek bu sorunların bir kısmı azaltıldı.
 
-**C10K Problemi:** 2000'li yıllarda internet kullanımı patlayıp sitelere aynı anda 10.000 kişi (C10K - 10K Concurrent) bağlanmaya başlayınca, Apache'nin bu yapısı sunucuların RAM'ini sömürüp sistemleri çökertmeye başladı. Donanım yetmemeye başladı.
+**C10K Problemi:** İnternetin büyümesiyle birlikte tek bir sunucunun aynı anda on binlerce bağlantıyı verimli şekilde yönetmesi önemli bir problem haline geldi. "C10K", tek bir makinede yaklaşık 10.000 eşzamanlı bağlantıyı yönetebilme problemini ifade eder. Sorun yalnızca bağlantı sayısı değil, bu bağlantıları yönetirken CPU, RAM ve işletim sistemi kaynaklarının verimli kullanılabilmesiydi.
 
-**Nginx'in Doğuşu (2004):** Rus geliştirici Igor Sysoev, bu sorunu çözmek için Nginx'i yazdı. Event-Driven (Olay Güdümlü) asenkron yapı sayesinde, standart bir sunucu ile 10 binlerce kişiye çökmeden yanıt verebildi ve performans standardını tamamen değiştirdi.
+**Nginx'in Doğuşu (2004):** Rus geliştirici Igor Sysoev tarafından geliştirilen Nginx, özellikle çok sayıda eşzamanlı bağlantıyı düşük kaynak tüketimiyle yönetebilmek amacıyla event-driven ve non-blocking bir mimari kullandı. Bu yaklaşım, yüksek eşzamanlı bağlantı sayısının geleneksel process/thread tabanlı yapılara göre daha verimli yönetilmesini sağladı ve Nginx'in yüksek performanslı web sunucuları arasında öne çıkmasına yardımcı oldu.
 
 |Alternatif|Öne Çıkan Özelliği|Neden Tercih Edilir?|Nginx ile Temel Farkı|
 |---|---|---|---|
@@ -42,7 +42,7 @@ Nginx arka planda iki temel yapıyla çalışır:
 
 **Master Process:** Patron görevindedir. Konfigürasyon dosyalarını okur ve Worker süreçlerini başlatıp yönetir. Kullanıcılardan gelen ağ istekleriyle doğrudan ilgilenmez.
 
-**Worker Process:** Gerçek işi yapan, istemcilerden gelen istekleri karşılayıp yanıtlayan mekanizmadır. Verimi maksimize etmek için genellikle sunucudaki her CPU çekirdeği başına 1 Worker Process atanır.
+**Worker Process:** Gerçek istemci bağlantılarını ve isteklerini işleyen process'lerdir. Performans için worker sayısı çoğu durumda CPU çekirdeği sayısıyla ilişkilendirilir. `worker_processes auto`, kullanıldığında Nginx uygun worker sayısını otomatik olarak belirleyebilir ancak bu, her durumda "bir çekirdek = bir worker" şeklinde değişmez bir kural değildir.
 
 <p align="center">
   <img src="process_hiyerarsisi.jpg" alt="Process Hiyerarşisi">
@@ -62,11 +62,21 @@ Nginx arka planda iki temel yapıyla çalışır:
 
 - Özelliği: Nginx bu klasörü doğrudan okumaz. Buraya bir dosya koyulması, sitenin anında yayına gireceği anlamına gelmez. Pasif bir arşiv alanıdır.
 
+- sites-available klasöründeki bir dosyanın aktif hale gelmesi için genellikle bu dosyaya sites-enabled altında bir sembolik link oluşturulur.
+
 **sites-enabled Klasörü (Vitrin / Aktif Alan)**
 
-- İşlevi: Sadece aktif olarak yayında olan sitelerin bulunduğu yerdir. Nginx başlarken sadece bu klasörün içindekileri okur.
+- İşlevi: Debian/Ubuntu gibi sistemlerde yaygın olarak kullanılan bir organizasyon yöntemidir. Aktif olarak kullanılacak site konfigürasyonlarının sembolik linkleri burada bulunur. Nginx'in bu dosyaları okuması, ana konfigürasyondaki `include /etc/nginx/sites-enabled/*;` gibi bir include directive'i sayesinde gerçekleşir. Nginx'in kendisi `sites-enabled` klasörünü özel olarak tanımaz.
 
 - Çalışma Mantığı (Symlink): Dosyaların orijinalleri bu klasöre kopyalanmaz. Bunun yerine, sites-available içindeki orijinal dosyaya işaret eden bir kısayol (symlink) oluşturulur.
+
+```
+sites-available/example.com
+            ↑
+            │ symlink
+            │
+sites-enabled/example.com
+```
 
 **Bu Hiyerarşinin Sağladığı Avantaj:**
 Bir site geçici olarak kapatılmak veya bakıma alınmak istendiğinde, uzun ayar dosyalarını silmeye gerek kalmaz. Sadece sites-enabled (vitrin) içindeki kısayol silinir ve Nginx'e ayarlar yeniden okutulur. Sitenin asıl ayarları sites-available içinde dokunulmamış halde kalır. Site geri açılmak istendiğinde kısayolu tekrar oluşturmak yeterlidir.
@@ -99,7 +109,7 @@ Bir site geçici olarak kapatılmak veya bakıma alınmak istendiğinde, uzun ay
 
 **Forward Proxy:** Kullanıcıyı (istemciyi) gizler ve korur. Örneğin VPN bir Forward Proxy'dir. İnternetteki bir siteye girildiğinde istek önce VPN sunucusuna yollanır, siteye kullanıcı yerine o girer ve sonucu getirir. Karşıdaki web sitesi kullanıcının kim olduğunu (gerçek IP'yi) bilmez, sadece VPN sunucusunu görür.
 
-**Reverse Proxy:** Sunucuyu gizler ve korur, Nginx budur. Dışarıdaki kullanıcılar siteye girerken doğrudan Node.js veya Python uygulamasına  ulaşamaz. İsteği Nginx karşılar, arka taraftaki uygulamaya kendi sorar, cevabı alıp kullanıcıya iletir. Kullanıcı arka planda hangi teknolojinin veya hangi portun çalıştığını asla bilmez, sadece Nginx'i görür.
+**Reverse Proxy:** Client ile backend sunucuları arasında duran ve client'ın isteklerini backend adına karşılayıp uygun arka uç servisine ileten proxy türüdür. Backend sunucularının doğrudan internete açılmasını gerektirmediği için mimarinin dışarıya karşı soyutlanmasına ve merkezi güvenlik, TLS, caching ve load balancing gibi işlemlerin uygulanmasına olanak sağlar. Sunucuyu gizler.
 
 <p align="center">
   <img src="reverse_proxy.jpg" alt="Proxy">
@@ -123,14 +133,14 @@ Bunu çözmek için Nginx'te `proxy_set_header` komutları kullanılır. Nginx, 
 **Amacı:** Nginx, arka plandaki uygulamanın oluşturduğu dinamik sayfaları veya API yanıtlarını diskte/hafızada tutabilir. Aynı sayfaya yönelik bir istek tekrar geldiğinde, Nginx arka plana (Node.js, PHP vb.) hiç sormadan cevabı doğrudan kendi önbelleğinden verir. Bu, yanıt sürelerini milisaniyelere düşürür ve uygulamanın gereksiz yere yorulmasını engeller.
 
 Nginx mimarisinde önbellek yönetimi için iki özel süreç (process) arka planda bağımsız olarak çalışır:
-- **Cache Manager:** Önbellek için ayrılan disk veya RAM alanını periyodik olarak denetler. Belirlenen kapasite dolduğunda en eski ve en az kullanılan verileri silerek yeni verilere yer açar.
-- **Cache Loader:** Nginx ilk çalıştığında veya yeniden başlatıldığında, diskte var olan eski önbellek verilerini tarayıp indeksleyerek belleğe yükler ve sistemin önbellekli şekilde hızlıca hazır olmasını sağlar.
+- **Cache Manager:** Nginx proxy cache'inin disk üzerindeki alanını yönetir. Cache boyutunun ve kullanılmayan cache nesnelerinin kontrol edilmesine ve gerektiğinde eski nesnelerin temizlenmesine yardımcı olur.
+- **Cache Loader:** Nginx yeniden başlatıldığında disk üzerinde daha önceden oluşturulmuş cache nesnelerini tarayarak bunların metadata bilgisini bellekteki cache indeksine yükler. Cache içeriğinin tamamı RAM'e yüklenmez.
 
 **Kullanımı:** Genel `http` bloğu içinde `proxy_cache_path` komutu ile önbelleğin nereye kaydedileceği ve kapasitesi tanımlanır. Ardından, önbelleğe alınması istenen yolların `location` bloğu içinde `proxy_cache` komutuyla aktif edilir.
 
 ## Load Balancing
 
-**Amacı:** Siteye gelen ziyaretçi sayısı tek bir uygulamanın veya sunucunun kaldıramayacağı kadar arttığında, aynı uygulamanın kopyaları farklı portlarda veya tamamen farklı sunucularda çalıştırılır. Nginx, kapıya yığılan bu trafiği arka plandaki bu kopyalar arasında paylaştırır. Sistem hem hızlanır hem de sunuculardan biri çökse bile Nginx trafiği diğerlerine kaydırarak sitenin ayakta kalmasını sağlar.
+**Amacı:** Load balancing yalnızca trafiği dağıtmak için değil, backend'lerden birinin başarısız olması durumunda sistemin dayanıklılığını artırmak için de kullanılabilir. Nginx, upstream sunucuların başarısızlıklarını belirli durumlarda pasif olarak algılayarak başarısız backend'i geçici olarak devre dışı bırakabilir. Daha gelişmiş aktif health-check mekanizmaları ise kullanılan Nginx sürümüne ve ürününe göre ayrıca değerlendirilmelidir.
 
 **Çalışma Mantığı (upstream Bloğu):** Nginx ayarlarında bir upstream (kaynak) bloğu tanımlanır. Bu blok, arka plandaki sunucuların bir listesidir. Ardından `proxy_pass` komutu tek bir IP veya porta değil, doğrudan bu upstream grubunun ismine yönlendirilir.
 
@@ -163,11 +173,14 @@ Nginx'te güvenli bir bağlantı kurarken genellikle şu iki kural uygulanır:
 
 - HTTP'yi HTTPS'e Zorlama: Eski usul güvensiz port olan 80'e (HTTP) gelen tüm istekler yakalanır ve anında güvenli porta (443) yönlendirilir. Kullanıcı `http://` yazsa bile Nginx onu zorla `https://` adresine atar.
 
-- Sertifika Tanımlamaları: Nginx'in gelen şifreli bağlantıları karşıladığı asıl porttur. Şifrelemenin çalışması için server bloğunun içinde iki kritik dosyanın yeri belirtilir:
-    - ssl_certificate (Public Key): Ziyaretçilere gönderilen ve onların göndereceği verilerin şifrelenmesini sağlayan kimlik belgesidir.
+- Sertifika Tanımlamaları: Nginx, TLS bağlantısını sonlandırarak client ile güvenli HTTPS iletişimini sağlayabilir. Bu durumda client ile Nginx arasındaki trafik TLS ile korunurken, Nginx ile backend arasındaki bağlantı ayrıca HTTP veya HTTPS olarak yapılandırılabilir.
+  - ssl_certificate, sunucunun kimliğini doğrulamak için kullanılan TLS sertifikasını belirtir. Sertifika, sunucunun public key'ini ve sertifika otoritesi (CA) tarafından imzalanmış kimlik bilgilerini içerir.
+  - ssl_certificate_key ise sertifikadaki public key'e karşılık gelen ve yalnızca sunucuda gizli tutulması gereken private key'i belirtir.
 
-    - ssl_certificate_key (Private Key): Nginx'in elinde tuttuğu, ziyaretçilerden gelen şifreli verilerin çözülmesini sağlayan gizli dosyadır.
-
+|Dosya|Görevi|
+|---|---|
+|ssl_certificate|TLS sertifikasını belirtir|
+|ssl_certificate_key|Sunucunun private key'ini belirtir|
 
 ## Gözlem ve Loglama
 
@@ -185,7 +198,9 @@ Amaç sistemde ne olup bittiğini görmek, hataları ayıklamak ve siteye gelen 
 
 ### Hız Sınırlandırma (Rate Limiting)
 
-Amacı sunucuyu DDoS saldırılarından, veri kazıyan botlardan ve kaba kuvvet (brute-force) şifre denemelerinden korumanın en temel yoludur. Tek bir IP adresinin sunucuya belirli bir zaman diliminde yapabileceği maksimum ağ isteği sayısını kısıtlar.
+Belirli bir client'ın veya anahtarın belirli bir süre içinde gönderebileceği request oranını sınırlandırarak API'lerin, login endpoint'lerinin ve diğer kritik kaynakların aşırı kullanımını önlemeye yardımcı olur. Bot trafiği, brute-force denemeleri ve uygulama katmanındaki bazı DoS türlerine karşı faydalı olabilir; ancak tek başına genel amaçlı bir DDoS koruması değildir.
+
+`limit_req` rate limit aşıldığında yapılandırmaya bağlı olarak request'i geciktirebilir veya reddedebilir. Reddedilen request'ler için varsayılan HTTP status code 429 Too Many Requests'tir; farklı bir status code yapılandırılabilir.
 
 **Çalışma Mantığı (Leaky Bucket Algoritması):** Eğer bir IP adresi belirlenen limiti (örneğin saniyede 10 istek) aşarsa, Nginx fazla gelen istekleri arka plandaki asıl uygulamaya hiç iletmeden doğrudan reddeder. Kullanıcıya "503 Service Unavailable" (veya yapılandırmaya göre 429 Too Many Requests) hata kodu döndürülür.
 
