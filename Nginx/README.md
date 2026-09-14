@@ -118,6 +118,16 @@ Nginx arka plandaki uygulama ile konuşurken bir problem ortaya çıkar. Arka pl
 
 Bunu çözmek için Nginx'te `proxy_set_header` komutları kullanılır. Nginx, isteği arka plana fırlatırken gerçek kullanıcının IP adresini ve tarayıcı bilgilerini bir HTTP Headers'a koyarak arka plandaki uygulamaya iletir. Böylece uygulama (hangi dilde yazılmış olursa olsun) aslında kiminle muhatap olduğunu bilir.
 
+## Önbellekleme (Caching)
+
+**Amacı:** Nginx, arka plandaki uygulamanın oluşturduğu dinamik sayfaları veya API yanıtlarını diskte/hafızada tutabilir. Aynı sayfaya yönelik bir istek tekrar geldiğinde, Nginx arka plana (Node.js, PHP vb.) hiç sormadan cevabı doğrudan kendi önbelleğinden verir. Bu, yanıt sürelerini milisaniyelere düşürür ve uygulamanın gereksiz yere yorulmasını engeller.
+
+Nginx mimarisinde önbellek yönetimi için iki özel süreç (process) arka planda bağımsız olarak çalışır:
+- **Cache Manager:** Önbellek için ayrılan disk veya RAM alanını periyodik olarak denetler. Belirlenen kapasite dolduğunda en eski ve en az kullanılan verileri silerek yeni verilere yer açar.
+- **Cache Loader:** Nginx ilk çalıştığında veya yeniden başlatıldığında, diskte var olan eski önbellek verilerini tarayıp indeksleyerek belleğe yükler ve sistemin önbellekli şekilde hızlıca hazır olmasını sağlar.
+
+**Kullanımı:** Genel `http` bloğu içinde `proxy_cache_path` komutu ile önbelleğin nereye kaydedileceği ve kapasitesi tanımlanır. Ardından, önbelleğe alınması istenen yolların `location` bloğu içinde `proxy_cache` komutuyla aktif edilir.
+
 ## Load Balancing
 
 **Amacı:** Siteye gelen ziyaretçi sayısı tek bir uygulamanın veya sunucunun kaldıramayacağı kadar arttığında, aynı uygulamanın kopyaları farklı portlarda veya tamamen farklı sunucularda çalıştırılır. Nginx, kapıya yığılan bu trafiği arka plandaki bu kopyalar arasında paylaştırır. Sistem hem hızlanır hem de sunuculardan biri çökse bile Nginx trafiği diğerlerine kaydırarak sitenin ayakta kalmasını sağlar.
@@ -173,4 +183,11 @@ Amaç sistemde ne olup bittiğini görmek, hataları ayıklamak ve siteye gelen 
 
 **Gereksiz Logları Kapatma:** Bir web sitesinde yüzlerce resim, CSS ve font dosyası olabilir. Her bir resim yüklendiğinde bunun `access.log` dosyasına yazılması diski çok hızlı doldurur ve sunucuyu yorar. Nginx'te location blokları içine `access_log off`; komutu yazılarak, sadece statik dosyaların loglanması kolayca iptal edilebilir.
 
+### Hız Sınırlandırma (Rate Limiting)
+
+Amacı sunucuyu DDoS saldırılarından, veri kazıyan botlardan ve kaba kuvvet (brute-force) şifre denemelerinden korumanın en temel yoludur. Tek bir IP adresinin sunucuya belirli bir zaman diliminde yapabileceği maksimum ağ isteği sayısını kısıtlar.
+
+**Çalışma Mantığı (Leaky Bucket Algoritması):** Eğer bir IP adresi belirlenen limiti (örneğin saniyede 10 istek) aşarsa, Nginx fazla gelen istekleri arka plandaki asıl uygulamaya hiç iletmeden doğrudan reddeder. Kullanıcıya "503 Service Unavailable" (veya yapılandırmaya göre 429 Too Many Requests) hata kodu döndürülür.
+
+**Kullanımı:** İlk olarak `http` bloğunda `limit_req_zone` direktifi ile IP adreslerinin takip edileceği bir RAM alanı (zone) ve saniyelik limit oluşturulur. Daha sonra, özellikle korunması gereken kritik sayfalarda (örneğin `/login` veya `/api`) ilgili `location` bloğunun içine `limit_req` komutu eklenerek kural devreye sokulur.
 
